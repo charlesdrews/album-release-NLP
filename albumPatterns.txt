@@ -1,0 +1,451 @@
+// Charles Drews, csd305@nyu.edu, N11539474
+// NLP Spring 2014 Term Project
+//
+//  Patterns for album announcements
+//
+
+// --------------------------------------------------------------
+// names & dates
+
+// artist and record company names
+// (from dictionaries - see albumChunkPatternsPA.txt)
+name-artist	:= [constit cat=name isArtist=true]:Artist;
+name-rec-co	:= [constit cat=name isRecCo=true]:RecCo;
+
+// album name could be an artist name, but not a record company name
+name-album	:= [constit cat=name isRecCo=false]:Album;
+
+// other descriptive names, neither artist nor record co, eg. "King of Pop"
+name-other	:= [constit cat=det]?
+		   [constit cat=name isArtist=false isRecCo=false]
+		   ("of" [constit cat=name isArtist=false isRecCo=false])?;
+
+// dates via TIMEX2 - allow for a prefix like "Earth Day, DATE"
+date		:= (name-other comma?)? [constit cat=date]:Date;
+
+// --------------------------------------------------------------
+// vgroups commonly used in patterns
+
+// vgroup with head=announce|confirm|reveal
+// also include some special cases that aren't tagged as a single vgroup
+vg-announce	:= [constit cat=vgroup pa=[head?isa(cAnnounce)]]
+		 | [constit cat=vgroup pa=[head=be]] proud "to"
+		   [constit cat=adv]? ("announce" | "confirm" | "reveal")
+		 | [constit cat=vgroup-pass pa=[head?isa(cPlease)]] "to"
+		   [constit cat=adv]? ("announce" | "confirm" | "reveal");
+proud		:= "proud" | "glad" | "happy" | "overjoyed";
+
+// vgroups with head=release|drop
+vg-release	:= [constit cat=vgroup pa=[head?isa(cRelease)]];
+
+// "will be released", "is being released", or special case "to be released"
+// also could use "due" in this context (sometimes not tagged as a vgroup)
+vg-pass-release	:= [constit cat=vgroup-pass pa=[head?isa(cRelease)]]
+		 | [constit cat=vgroup pa=[head=be]] "released"
+		 | "to" "be" [constit cat=adv]? "released"
+		 | [constit cat=vgroup pa=[head=due]] | "due" ("out")?;
+
+// vgroup with head=title|name|call|dub|entitle
+// the word "titled" is sometimes not tagged as a vgroup, so specify
+// same with "entitled"
+vg-title	:= [constit cat=vgroup pa=[head?isa(cTitle)]]
+		 | [constit cat=adv]? "titled"
+		 | [constit cat=adv]? "entitled";
+vg-pass-title	:= [constit cat=vgroup-pass pa=[head?isa(cTitle)]];
+
+// vgroup with head=hit|reach|arrive|land
+vg-hit		:= [constit cat=vgroup pa=[head?isa(cHit)]];
+
+// vgroup with head=begin|start|open|launch
+vg-begin	:= [constit cat=vgroup pa=[head?isa(cBegin)]];
+
+// vgroup with head=finish|finalize|wrap|put|putt(putting maps to putt)
+vg-finish	:= [constit cat=vgroup pa=[head?isa(cFinish)]];
+
+// vgroup with head=sign|ink
+vg-sign		:= [constit cat=vgroup pa=[head?isa(cSign)]];
+
+// vgroup for returns or "is back" or "comes back"
+vg-return	:= [constit cat=vgroup pa=[head=return]]
+		 | [constit cat=vgroup pa=[head=be]] "back"
+		 | [constit cat=vgroup pa=[head=come]] "back"
+		 | [constit cat=ngroup pa=[head=return]];
+	// last one necessary because sometimes "returns" is mistagged
+
+// --------------------------------------------------------------
+// ngroups commonly used in patterns
+
+// ngroup with head=album|record|release|length
+// note "release" can't be in cAlbum because it's in cRelease already
+// also add some special cases for "LP" or "EP"
+// (det-pos and adj-phrase defined in albumChunkPatternsPA.txt)
+ng-album	:= [constit cat=ngroup pa=[head?isa(cAlbum)]]
+		 | [constit cat=ngroup pa=[head=release]]
+		 | det-pos? adj-phrase? ("LP" | "EP" | "CD");
+
+// ngroup with head=release|drop
+ng-release	:= [constit cat=ngroup pa=[head?isa(cRelease)]];
+
+// ngroup with head=artist|band|group
+ng-artist	:= [constit cat=ngroup pa=[head?isa(cArtist)]];
+
+// ngroup with head=partnership|conjunction|tandem
+ng-partnership	:= [constit cat=ngroup pa=[head?isa(cPartnership)]];
+
+// ngroup with head=label|imprint|partner
+ng-label	:= [constit cat=ngroup pa=[head?isa(cLabel)]];
+
+// ngroup with head=store|shop|rack|shelf
+ng-store	:= [constit cat=ngroup pa=[head?isa(cStore)]];
+
+// ngroup with head=phase|chapter|segment|section|portion|part
+ng-phase	:= [constit cat=ngroup pa=[head?isa(cPhase)]];
+
+// ngroup with head=touches|details
+ng-detail	:= [constit cat=ngroup pa=[head?isa(cDetail)]];
+
+// ngroup with head=plan|intent
+ng-plan		:= [constit cat=ngroup pa=[head?isa(cPlan)]];
+
+// ngroup with head=contract|deal
+ng-contract	:= [constit cat=ngroup pa=[head?isa(cContract)]];
+
+// --------------------------------------------------------------
+// other frequently used patterns
+
+comma		:= "," | "-" | "--";
+quote		:= "\"" | "''" | "'";
+from		:= "from" | "by" | "featuring";
+via		:= ("on" | "through" | "via" | "by" | "for" | "with");
+rel-area	:= "in" name-other | "globally" | "worldwide";
+
+// descriptive phrase that could precede an artist's name
+// (adj-phrase is defined in albumChunkPatternsPA.txt)
+artist-desc	:= [constit cat=det]? ([constit cat=ngroup] | name-other)
+		   (("of" | "and" | "-")? ([constit cat=ngroup] | name-other))*
+		 | [constit cat=det]? adj-phrase;
+
+// phrase used in same context as a passive release vgroup
+// "will hit stores" or "will land on the shelves"
+hit-stores	:= vg-hit ("in" | "on")? ng-store;
+
+
+// --------------------------------------------------------------
+pattern set artist;
+
+artist		:= artist-1 | artist-2 | artist-3 | artist-4 | artist-5
+		 | artist-6 | artist-7 | artist-8 | artist-9 | artist-10
+		 | artist-11 | artist-12;
+
+// "ARTIST will release" or "ARTIST is going to drop"
+artist-1	:= name-artist comma? vg-release
+		 | name-artist comma [constit cat=det]? artist-desc
+		   comma vg-release
+		 | name-artist comma ng-artist comma vg-release
+		 | name-artist ng-release ng-album
+		 | name-artist ng-release quote? name-album quote?;
+	// last two needed because "release" if untensed may not be
+	// tagged as a vgroup at all; instead ngroup
+
+// "will release an album by ARTIST"
+// "releases ALBUM, an album of songs by ARTIST"
+artist-2	:= vg-release (name-album comma?)? ng-album
+		   ("of" [constit cat=ngroup])? "by" name-artist
+		 | vg-release (name-album comma?)? ng-album
+		   ("of" [constit cat=ngroup])? "by"
+		   artist-desc comma? name-artist
+		 | vg-release (name-album comma?)? ng-album
+		   ("of" [constit cat=ngroup])? "by" ng-artist
+		   comma? name-artist;
+
+// "ARTIST has announced an album" or "ARTIST anounces ALBUM"
+info		:= ("information" | "info" | "details")
+		   ("on" | "about" | "regarding")?;
+artist-3	:= name-artist vg-announce [constit cat=det]? info? ng-album
+		 | name-artist vg-announce [constit cat=det]? comma?
+		   quote? name-album quote?
+		 | name-artist comma? (ng-artist | artist-desc) comma?
+		   vg-announce [constit cat=det]? info? ng-album
+		 | name-artist comma? (ng-artist | artist-desc) comma?
+		   vg-announce [constit cat=det]? comma? quote?
+		   name-album quote?;
+
+// "ARTIST has announced the band will release..."
+artist-4	:= name-artist vg-announce ([constit cat=pro] | ng-artist)
+		   vg-release;
+
+// "ARTIST has announced the date release..." 
+artist-5	:= name-artist comma?
+		   (comma [constit cat=ngroup]
+		    ("and" [constit cat=ngroup])* comma)?
+		   vg-announce (("a" | "an" | "the") date (ng-release |
+		       [constit cat=ngroup pa=[head=date]]) | ng-release);
+
+// "ARTIST's new album, NAME, will be released..."
+artist-6	:= name-artist "'s" ng-album (comma? name-album comma?)?
+                   vg-pass-release;
+
+// "announcing the release of NAME, a new album by ARTIST"
+// or "announcing the release of a new album by ARTIST"
+artist-7	:= vg-announce ng-release "of" quote? name-album quote?
+		   (comma? ng-album comma?)? from name-artist
+		 | vg-announce ng-release "of" ng-album
+		   (comma? quote? name-album quote? comma?)? from name-artist;
+
+// "ARTIST will begin a new phase..."
+artist-8	:= name-artist vg-begin ng-phase;
+
+// "ARTIST returns with a new album..."
+artist-9	:= name-artist comma? (("and")? [constit cat=ngroup])*
+		   vg-return via ng-album
+		 | name-artist comma? (("and")? [constit cat=ngroup])*
+		   vg-return via comma? quote? name-album quote?;
+
+// "ARTIST is wrapping up thier new album"
+// or "ARTIST is putting the finishing touches on ALBUM"
+artist-10	:= name-artist vg-finish ("up")? ng-album
+		 | name-artist vg-finish ("up")? comma? quote?
+		   name-album quote?
+		 | name-artist vg-finish ("up")? ng-detail ("of" | "on")
+		   ng-album
+		 | name-artist vg-finish ("up")? ng-detail ("of" | "on")
+		   comma? quote? name-album quote?;
+
+// "the release of ARTIST's new album" or "the release of ARTIST's NAME"
+artist-11	:= ng-release "of" name-artist "'s" ng-album
+		 | ng-release "of" name-artist "'s"
+		   (det-pos? adj-phrase)? quote? name-album quote?;
+
+// "ARTIST has announced thier plan to release..."
+artist-12	:= name-artist vg-announce ng-plan "to"
+		   (vg-release | "release");
+	// sometimes if "release" is untensed it won't be tagged as a vgroup
+
+when artist	write "\n------------------------------\n" +
+		      "Artist:\t\t" + Artist;
+
+// --------------------------------------------------------------
+pattern set album;
+
+album		:= album-1 | album-2 | album-3 | album-4 | album-5 | album-6
+		 | album-7;
+
+// "will release a new album titled ALBUM" or "new album will be titled ALBUM"
+album-1		:= vg-release ng-album comma? vg-title
+		   comma? quote? name-album quote?
+		 | ng-album vg-pass-title comma? quote? name-album quote?;
+
+// "going to release their new ALBUM" or "will drop an album, ALBUM,"
+// (det-pos and adj-phrase defined in albumChunkPatternsPA.txt)
+album-2		:= vg-release (det-pos? adj-phrase)? quote? name-album quote?
+		 | vg-release ng-album comma? quote? name-album quote? comma?
+		 | ng-release (det-pos? adj-phrase)? quote? name-album quote?
+		 | ng-release ng-album comma? quote? name-album quote? comma?;
+	// last two needed because "release" if untensed may not be
+	// tagged as a vgroup at all; instead ngroup
+
+// "... ALBUM will be released..."
+album-3		:= quote? name-album quote? comma? ("which")?
+		   (vg-pass-release | hit-stores);
+
+// "... announced ALBUM, a new album..." or
+// "... announce a new album, ALBUM"
+album-4		:= vg-announce comma? quote? name-album quote? comma? ng-album
+		 | vg-announce ng-album comma? quote? name-album quote?;
+
+// "... has confirmed the release of their new album, ALBUM, ..."
+album-5		:= vg-announce ng-release "of" ng-album
+		   comma? quote? name-album quote?
+		 | vg-announce ng-release "of" quote? name-album quote?
+		   comma? ng-album
+		 | vg-announce ng-release "of" quote? name-album quote?
+		   comma? pre-date date
+		 | vg-announce (("a" | "an" | "the") date (ng-release |
+		       [constit cat=ngroup pa=[head=date]]) | ng-release)
+		   ("of" | "for") ng-album? comma? quote? name-album quote?
+		 | vg-announce ng-release "of" name-artist "'s" ng-album
+		 | vg-announce ng-release "of" name-artist "'s"
+		   quote? name-album quote?;
+
+// "announced plans to release a new album, ALBUM..."
+album-6		:= vg-announce ng-plan "to" (vg-release | "release")
+		   ng-album? comma? quote? name-album quote?;
+	// sometimes if "release" is untensed it won't be tagged as a vgroup
+
+// "ARTIST returns with a new album..."
+album-7		:= name-artist vg-return via ng-album? comma? quote?
+		   name-album quote?;
+
+when album	write "Album:\t\t" + Album;
+
+// self-titled albums (look for ngroup w/ feature st=true)
+st-album	:= vg-release det-pos? [constit cat=ngroup st=true]
+		 | [constit cat=ngroup st=true] (vg-pass-release | hit-stores)
+		 | vg-announce ng-release "of" det-pos?
+		   [constit cat=ngroup st=true];
+
+when st-album	write "Album:\t\tself-titled";
+
+// --------------------------------------------------------------
+pattern set record-co;
+
+record-co	:= rec-co1 | rec-co2 | rec-co3 | rec-co4 | rec-co5
+		 | rec-co6 | rec-co7 | rec-co8 | rec-co9;
+
+// "RECORD COMPANY will release NAME"
+// "RECORD COMPANY, in partnership with NAME, will release the album"
+partner-phrase	:= ("in" ng-partnership "with" | "with" | "and") 
+		   [constit cat=det]? (name-rec-co | name-artist | name-other)
+		   ("of" [constit cat=name])?
+		 | "and" (name-rec-co | name-artist | name-other)
+		 | comma (name-rec-co | name-artist | name-other);
+rec-co1		:= name-rec-co (comma? partner-phrase comma?)? 
+		   (ng-artist name-artist)? vg-release
+		   comma? quote? name-album quote? comma?
+		 | name-rec-co (comma? partner-phrase comma?)?
+		   (ng-artist name-artist)? vg-release ng-album;
+
+// "on their label RECORD COMPANY" or "on the band's/group's label REC CO"
+rec-co2		:= via ng-label comma? name-rec-co;
+
+// "will release NAME on RECORD COMPANY" or "releases the album NAME on RC"
+date-or-area	:= (pre-date? date) | rel-area;
+rec-co3		:= vg-release (det-pos? adj-phrase)?
+		   quote? name-album quote? comma? date-or-area*
+		   via name-rec-co
+		 | vg-release ng-album comma? quote? name-album quote? comma?
+		   date-or-area* via name-rec-co
+		 | vg-release ng-album date-or-area* via name-rec-co;
+
+// "will be released on DATE on RECORD COMPANY"
+rec-co4		:= vg-pass-release comma? rel-area comma? pre-date? date
+		   comma? via name-rec-co
+		 | vg-pass-release comma? pre-date? date comma? rel-area
+		   comma? via name-rec-co
+		 | vg-pass-release comma?
+		   ((pre-date? date) | rel-area)?
+		   comma? via name-rec-co;
+
+// "RECORD COMPANY announced today ARTIST's new album, NAME, will be released"
+rec-co5		:= name-rec-co vg-announce date? "that" name-artist "'s"
+		   ng-album (comma? name-album comma?)? vg-pass-release;
+
+// "RECORD COMPANY announced today the release of..."
+rec-co6		:= name-rec-co vg-announce date? ng-release "of";
+
+// "the release of a new album on RECORD COMPANY"
+rec-co7		:= ng-release "of" ng-album
+		   (comma? quote? name-album quote? comma?)?
+		   via name-rec-co
+		 | ng-release "of" [constit cat=ngroup] via name-rec-co;
+
+// "... new album for RECORD COMPANY"
+rec-co8		:= ng-album (("and" ng-album) |
+		             ("(" ("and" | "&")? ng-album ")"))?
+		   via ng-label? name-rec-co;
+
+// "the artist has signed a new deal with RECORD COMPANY"
+rec-co9		:= (name-artist | ng-artist) vg-sign ng-contract
+		   via name-rec-co;
+
+when record-co	write "Record Company:\t" + RecCo;
+
+// --------------------------------------------------------------
+pattern set release-date;
+
+rel-date	:= rel-date1 | rel-date2 | rel-date3 | rel-date4 | rel-date5
+		 | rel-date6 | rel-date7 | rel-date8 | rel-date9 | rel-date10
+		 | rel-date11 | rel-date12;
+
+// "on DATE, NAME will release..."
+pre-date	:= ("On" | "on" | "In" | "in" | "This" | "this"
+                    "Next" | "next");
+rel-date1	:= pre-date date comma? det-pos? adj-phrase?
+		   (name-artist | name-rec-co)
+		   (comma? partner-phrase comma?)? vg-release
+		 | pre-date date comma? ng-artist comma? name-artist
+		   (comma? partner-phrase comma?)? vg-release
+		 | pre-date date comma? ng-label comma? name-rec-co
+		   (comma? partner-phrase comma?)? vg-release;
+
+// "will be released in the US on DATE"
+rel-date2	:= (vg-release | vg-pass-release | hit-stores) rel-area?
+		   pre-date? date comma?;
+
+// "... will release ALBUM on RECORD COMPANY, DATE"
+// "... will release an album on DATE"
+format		:= "CD" | "EP" | "LP"
+		 | [constit cat=ngroup pa=[head=vinyl]]
+		 | [constit cat=ngroup pa=[head=download]];
+format-phrase	:= ("on" | "in" | "via") format
+		   ((comma | "and" | "&") format)*;
+misc-desc	:= ((comma? format-phrase) |
+		    (comma? via name-rec-co) |
+		    (comma? rel-area));
+rel-date3	:= vg-release (det-pos? adj-phrase)? quote? name-album quote?
+		   misc-desc* comma? pre-date? date
+		 | vg-release ng-album (comma? name-album comma?)?
+		   misc-desc* comma? pre-date? date
+		 | vg-release ng-album comma? vg-title
+		   comma? quote? name-album quote? comma?
+		   misc-desc* comma? pre-date? date
+		 | ng-release (det-pos? adj-phrase)? quote? name-album quote?
+		   misc-desc* comma? pre-date? date
+		 | ng-release ng-album (comma? name-album comma?)?
+		   misc-desc* comma? pre-date? date
+		 | ng-release ng-album comma? vg-title
+		   comma? quote? name-album quote? comma?
+		   misc-desc* comma? pre-date? date; 
+	// last three needed because "release" if untensed may not be
+	// tagged as a vgroup at all; instead ngroup
+
+// "... has announced the release of NAME on DATE"
+rel-date4	:= vg-announce ng-release "of" quote? name-album quote?
+		   (comma? ng-album comma?)? comma? pre-date? date
+		 | vg-announce ng-release "of" ng-album
+		   (comma? quote? name-album quote? comma?)?
+		   comma? pre-date? date;
+
+// "will be released on DATE via RECORD COMPANY" or via RC on DATE
+rel-date5	:= vg-pass-release comma? pre-date? date comma?
+		   via name-rec-co
+		 | vg-pass-release comma? via name-rec-co comma?
+		   pre-date? date;
+
+
+// "... a release party on DATE"
+rel-date6	:= [constit cat=ngroup pa=[head=party]] ("on")? date;
+
+// "... announce the DATE release of ..."
+//rel-date7	:= vg-announce "the" date ng-release "of";
+rel-date7	:=  vg-announce ("a" | "an" | "the") date (ng-release |
+		       [constit cat=ngroup pa=[head=date]]) ("of" | "for");
+
+// "ARTIST will begin a new phase on DATE..."
+rel-date8	:= name-artist vg-begin ng-phase 
+		   (("in" | "of")? [constit cat=ngroup pa=[head=career]])?
+		   ("on")? date;
+
+// "On DATE, NAME is pleased to announce the release..."
+rel-date9	:= pre-date date comma? (name-artist | name-rec-co)
+		   vg-announce ng-release;
+
+// "will release a new album titled ALBUM on DATE"
+rel-date10	:= vg-release ng-album comma? vg-title
+		   comma? quote? name-album quote? comma? pre-date? date;
+
+// "the release of their new album via RECORD COMPANY on DATE"
+rel-date11	:= ng-release "of" ng-album
+		   (comma? quote? name-album quote? comma?)?
+		   via name-rec-co comma? pre-date? date;
+
+// "announced plans to release a new album, ALBUM, on DATE"
+rel-date12	:= vg-announce ng-plan "to" (vg-release | "release")
+		   ng-album? comma? quote? name-album quote?
+		   (via name-rec-co)? comma? pre-date? date
+		 | vg-announce ng-plan "to" (vg-release | "release")
+		   ng-album comma? (quote? name-album quote?)?
+		   (via name-rec-co)? comma? pre-date? date;
+	// sometimes if "release" is untensed it won't be tagged as a vgroup
+
+when rel-date	write "Release Date:\t" + Date;

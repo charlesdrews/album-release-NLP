@@ -1,0 +1,34 @@
+cAnnounce isa cVgroupHead
+cAnnounce words announce, confirm, reveal, set
+cRelease isa cVgroupHead
+cRelease words release, drop, unveil
+cTitle isa cVgroupHead
+cTitle words title, name, call, dub, entitle
+cHit isa cVgroupHead
+cHit words hit, reach, arrive, land
+cBegin isa cVgroupHead
+cBegin words begin, start, open, launch
+cFinish isa cVgroupHead
+cFinish words finish, finalize, wrap, put, putt
+cPlease isa cVgroupHead
+cPlease words please, excite, cheer, thrill
+cSign isa cVgroupHead
+cSign words sign, ink
+cAlbum isa cNgroupHead
+cAlbum words album, record, length
+cPartnership isa cNgroupHead
+cPartnership words partnership, conjunction, tandem
+cArtist isa cNgroupHead
+cArtist words artist, band, group, team, musician, singer, songwriter
+cLabel isa cNgroupHead
+cLabel words label, imprint, partner
+cStore isa cNgroupHead
+cStore words store, shop, rack, shelf
+cPhase isa cNgroupHead
+cPhase words phase, chapter, segment, section, portion, part
+cDetail isa cNgroupHead
+cDetail words detail, touch
+cPlan isa cNgroupHead
+cPlan words plan, intent
+cContract isa cNgroupHead
+cContract words contract, deal

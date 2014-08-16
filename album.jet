@@ -1,0 +1,19 @@
+# Charles Drews, csd305@nyu.edu, N11539474
+# NLP Spring 2014 Term Project
+#
+# JET properties file
+Jet.dataPath	     = data
+EnglishLex.fileName1 = Jet4.dict
+EnglishLex.fileName2 = artist_names.dict
+EnglishLex.fileName3 = record_co_names.dict
+Tags.fileName	     = pos_hmm.txt
+Timex.rule           = time_rules.yaml
+Timex.refTime        = 2014-05-06
+Concepts.fileName    = albumConcepts.hrc
+Pattern.fileName1    = albumChunkPatternsPA.txt
+Pattern.fileName2    = albumPatterns.txt
+JetTest.fileName     = announcements2.txt
+processSentence      = tokenize, lexLookup, pruneTags, tagTimex, \
+                       pat(names), pat(dates), pat(chunks), \
+                       pat(artist), pat(album), pat(record-co), \
+		       pat(release-date)

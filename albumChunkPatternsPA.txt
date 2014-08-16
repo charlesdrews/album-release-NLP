@@ -1,0 +1,107 @@
+// Charles Drews, csd305@nyu.edu, N11539474
+// NLP Spring 2014 Term Project
+//
+// chunk patterns
+//
+
+// --------------------------------------------------------------
+// pattern set for artist, record company, and possible album names
+
+pattern set names;
+
+// tag artist names (see artist_names.dict)
+artist-ng	:= [constit cat=artist];
+when artist-ng	add [constit cat=name isArtist=true isRecCo=false];
+
+// tag record company names (see record_co_names.dict)
+record-co-ng	:= [constit cat=record-co];
+when record-co-ng add [constit cat=name isRecCo=true isArtist=false];
+
+// tag possible album names (non-artist, non-record-company, capitalized)
+caps		:= [token case=cap] | [token case=forcedCap] | [undefinedCap];
+non-caps	:= "the" | "and" | "with" | "of" | "a" | "'" | "'d" | "'m"
+		 | "'ll" | "'re";
+possible-album	:= caps (non-caps? caps)*;
+when possible-album add [constit cat=name isArtist=false isRecCo=false];
+
+// --------------------------------------------------------------
+pattern set dates;
+
+// looks like if day component is 11th, 12th, or 13th TIMEX2 ignores it
+// also if day appears before month, eg. "5th May," it is ignored
+// also "Saturday, April 1" is tagged as two dates: "Saturday" and "April 1"
+day-suffix	:= "st" | "nd" | "rd" | "th";
+missed-day	:= [number] day-suffix? | "11th" | "12th" | "13th";
+timex		:= ([TIMEX2] (",")?)? (missed-day (",")?)? [TIMEX2]
+		   ((",")? missed-day)?;
+when timex	add [constit cat=date];
+
+// --------------------------------------------------------------
+
+// pattern set for noun and verb groups
+
+pattern set chunks;
+
+// patterns for noun groups
+
+ng		:= det-pos? adj-phrase? ("self" ("-")? "titled")
+		   [constit cat=n pa=PA-noun] St=true
+		 | det-pos? adj-phrase? [constit cat=n pa=PA-noun] St=false
+		 | [constit cat=pro pa=PA-noun] St=false;
+
+det-pos		:= [constit cat=det]
+		 | [constit cat=det]? [constit cat=n number=singular] "'s";
+
+proper-noun	:= ([token case=cap] | [undefinedCap])+;
+
+adj-phrase	:= (([constit cat=adv]? [constit cat=adj]) |
+                    ([constit cat=adv] ("-")? [constit cat=ven]) |
+                    ([constit cat=adj] ("-")? [constit cat=ven]) |
+                    ([constit cat=adv] ("-")?
+		         [constit cat=tv pa=[tense=past]]) |
+                    ([constit cat=adj] ("-")?
+		         [constit cat=tv pa=[tense=past]]) |
+		    ([constit cat=adj] "-" prenom-noun) |
+		    (prenom-noun ("-")? [constit cat=adj]) |
+		    [constit cat=q] | [constit cat=ordinal] |
+                    [constit cat=ving])* prenom-noun?;
+
+prenom-noun	:= [constit cat=n number=singular]
+		 | [constit cat=name isArtist=false isRecCo=false];
+
+when ng		add [constit cat=ngroup pa=PA-noun st=St];
+
+
+// patterns for verb groups
+
+vg		:= [constit cat=adv]? [constit cat=tv pa=PA-verb]
+		 | [constit cat=w] [constit cat=adv]? vg-inf
+		 | tv-vbe [constit cat=adv]? vg-ving
+		 | tv-vhave [constit cat=adv]? vg-ven
+		 | tv-vbe [constit cat=adv]? [constit cat=ving pa=[head=go]]
+		   "to" vg-inf
+		 | tv-vbe [constit cat=ving pa=[head=go]] "to"
+		   [constit cat=adv]? vg-inf;
+
+vg-inf		:= [constit cat=v pa=PA-verb]
+		 | "be" vg-ving;
+
+vg-ven		:= [constit cat=ven pa=PA-verb]
+		 | "been" vg-ving;
+
+vg-ving		:= [constit cat=ving pa=PA-verb];
+
+tv-vbe		:= "is" | "are" | "was" | "were";
+
+tv-vhave	:= "has" | "have" | "had";
+
+when vg		add [constit cat=vgroup pa=PA-verb];
+
+
+vg-pass		:= tv-vbe [constit cat=adv]? [constit cat=ven pa=PA-verb]
+		 | [constit cat=w] "not"? "be" [constit cat=adv]?
+		   [constit cat=ven pa=PA-verb]
+		 | tv-vhave "been" [constit cat=adv]?
+		   [constit cat=ven pa=PA-verb];
+
+when vg-pass	add [constit cat=vgroup-pass pa=PA-verb];
